@@ -26,6 +26,8 @@ package com.nordicsemi.nrfUARTv2;
 
 
 
+import static android.content.pm.PackageManager.*;
+
 import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.util.Date;
@@ -33,6 +35,7 @@ import java.util.Date;
 
 import com.nordicsemi.nrfUARTv2.UartService;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -46,6 +49,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -54,6 +58,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -86,6 +92,14 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private ArrayAdapter<String> listAdapter;
     private Button btnConnectDisconnect,btnSend;
     private EditText edtMessage;
+
+    String[] permissionArrays = new String[]{Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION};
+    int REQUEST_CODE = 101;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,6 +110,11 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             finish();
             return;
         }
+
+        if (!hasPermissions(this, permissionArrays)) {
+            ActivityCompat.requestPermissions(this, permissionArrays, REQUEST_CODE);
+        }
+
         messageListView = (ListView) findViewById(R.id.listMessage);
         listAdapter = new ArrayAdapter<String>(this, R.layout.message_detail);
         messageListView.setAdapter(listAdapter);
@@ -160,6 +179,17 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
      
         // Set initial UI state
         
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     
     //UART service connected/disconnected
@@ -404,6 +434,29 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             })
             .setNegativeButton(R.string.popup_no, null)
             .show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        boolean openActivityOnce = true;
+        boolean openDialogOnce = true;
+        if (requestCode == REQUEST_CODE ) {
+            for (int i = 0; i < grantResults.length; i++) {
+                String permission = permissions[i];
+
+                //boolean isPermitted = grantResults[i] == PERMISSION_GRANTED;
+
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    // user rejected the permission
+                    Toast.makeText(this, "test", Toast.LENGTH_SHORT).show();
+
+                }else {
+                    //  user grant the permission
+                    // you can perfome your action
+                }
+            }
         }
     }
 }
